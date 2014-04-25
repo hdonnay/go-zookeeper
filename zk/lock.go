@@ -8,10 +8,13 @@ import (
 )
 
 var (
-	ErrDeadlock  = errors.New("zk: trying to acquire a lock twice")
+	// ErrDeadlock is returned if Lock() is called on a locked Lock
+	ErrDeadlock = errors.New("zk: trying to acquire a lock twice")
+	// ErrNotLocked is returned if Unlock() is called on an unlocked Lock
 	ErrNotLocked = errors.New("zk: not locked")
 )
 
+// Lock provides a sync.Locker backed by Zookeeper
 type Lock struct {
 	c        *Conn
 	path     string
@@ -20,6 +23,7 @@ type Lock struct {
 	seq      int
 }
 
+// NewLock returns a Lock backed by the Zookeeper cluster connection 'c'
 func NewLock(c *Conn, path string, acl []ACL) *Lock {
 	return &Lock{
 		c:    c,
@@ -33,6 +37,7 @@ func parseSeq(path string) (int, error) {
 	return strconv.Atoi(parts[len(parts)-1])
 }
 
+// Lock acquires the exclusive lock
 func (l *Lock) Lock() error {
 	if l.lockPath != "" {
 		return ErrDeadlock
@@ -118,6 +123,7 @@ func (l *Lock) Lock() error {
 	return nil
 }
 
+// Unlock releases the exclusive lock
 func (l *Lock) Unlock() error {
 	if l.lockPath == "" {
 		return ErrNotLocked
